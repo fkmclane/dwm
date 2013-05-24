@@ -65,7 +65,7 @@ static const Layout layouts[] = {
 
 /* commands */
 static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "st", "-f", font, NULL };
+static const char *termcmd[]  = { "st", "-f", font, "-e", "tmux", NULL };
 static const char *webcmd[]   = { "chromium-browser", NULL };
 static const char *filecmd[]  = { "thunar", NULL };
 

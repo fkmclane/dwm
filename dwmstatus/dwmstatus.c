@@ -81,6 +81,18 @@ getcore(core *cpu) {
 	return (int)percent;
 }
 
+int
+gettemp() {
+	FILE *file;
+	int temp;
+
+	file = fopen("/sys/devices/virtual/thermal/thermal_zone0/temp", "r");
+	fscanf(file, "%d\n", &temp);
+	fclose(file);
+
+	return temp / 1000;
+}
+
 char *
 getmem() {
 	FILE *file;
@@ -100,6 +112,22 @@ getmem() {
 	}
 
 	return smprintf("%.1f %s", kilobytes, prefixes[prefix]);
+}
+
+int
+getbatt() {
+	FILE *file;
+	int full, now;
+
+	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/BAT0/charge_full", "r");
+	fscanf(file, "%d\n", &full);
+	fclose(file);
+
+	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/BAT0/charge_now", "r");
+	fscanf(file, "%d\n", &now);
+	fclose(file);
+
+	return now / full;
 }
 
 void
@@ -140,7 +168,9 @@ int
 main(void) {
 	char *status;
 	int cpuload;
+	int cputemp;
 	char *memused;
+	int battery;
 	char *time;
 
 	if (!(dpy = XOpenDisplay(NULL))) {
@@ -150,9 +180,11 @@ main(void) {
 
 	for (;;sleep(2)) {
 		cpuload = getcore(cpu);
+		cputemp = gettemp();
 		memused = getmem();
+		battery = getbatt();
 		time = mktimes("%A %d %B %I:%M %p", tz);
-		status = smprintf("\x05[\x01 CPU:\x06 %d%% \x05] [\x01 MEM:\x06 %s \x05] [\x01 %s \x05]\n", cpuload, memused, time);
+		status = smprintf("\x05[\x01 CPU:\x06 %d%% \x05] [\x01 TEMP:\x06 %d%sC \x05] [\x01 MEM:\x06 %s \x05] [\x01 BATT:\x06 %d%% \x05] [\x01 %s \x05]\n", cpuload, cputemp, "\xB0", memused, battery, time);
 		setstatus(status);
 		free(memused);
 		free(time);

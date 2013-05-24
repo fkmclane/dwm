@@ -127,7 +127,7 @@ getbatt() {
 	fscanf(file, "%d\n", &now);
 	fclose(file);
 
-	return now / full;
+	return now * 100 / full;
 }
 
 void

@@ -764,40 +764,34 @@ drawbar(Monitor *m) {
 	drawtext(m->ltsymbol, dc.norm, False);
 	dc.x += dc.w;
 	x = dc.x;
-	if(m == selmon) { /* status is only drawn on selected monitor */
-		if(m->lt[m->sellt]->arrange == monocle){
-			dc.x = x;
-			for(c = nexttiled(m->clients), a = 0, s = 0; c; c = nexttiled(c->next), a++)
-				if(c == m->stack)
-					s = a;
-			if(!s && a)
+	if(m->lt[m->sellt]->arrange == monocle){
+		dc.x = x;
+		for(c = nexttiled(m->clients), a = 0, s = 0; c; c = nexttiled(c->next), a++)
+			if(c == m->stack)
 				s = a;
-			snprintf(posbuf, LENGTH(posbuf), "[%d/%d]", s, a);
-			dc.w= TEXTW(posbuf);
-			drawtext(posbuf, dc.norm, False);
-			x= dc.x + dc.w;
-		}
+		if(!s && a)
+			s = a;
+		snprintf(posbuf, LENGTH(posbuf), "[%d/%d]", s, a);
+		dc.w= TEXTW(posbuf);
+		drawtext(posbuf, dc.norm, False);
+		x= dc.x + dc.w;
+	}
 
-		dc.w = 0;
-		char *buf = stext, *ptr = buf;
-		while(*ptr) {
-			for(i = 0; *ptr < 0 || *ptr > NumColors; i++, ptr++);
-			dc.w += textnw(buf, i);
-			buf = ++ptr;
-		}
-		dc.w+=dc.font.height;
-		dc.x = m->ww - dc.w;
-		if(dc.x < x) {
-			dc.x = x;
-			dc.w = m->ww - x;
-		}
-		m->titlebarend=dc.x;
-		drawcoloredtext(m, stext);
+	dc.w = 0;
+	char *buf = stext, *ptr = buf;
+	while(*ptr) {
+		for(i = 0; *ptr < 0 || *ptr > NumColors; i++, ptr++);
+		dc.w += textnw(buf, i);
+		buf = ++ptr;
 	}
-	else {
-		dc.x = m->ww;
-		m->titlebarbegin = dc.x;
+	dc.w+=dc.font.height;
+	dc.x = m->ww - dc.w;
+	if(dc.x < x) {
+		dc.x = x;
+		dc.w = m->ww - x;
 	}
+	m->titlebarend=dc.x;
+	drawcoloredtext(m, stext);
 
 	for(c = m->clients; c && !ISVISIBLE(c); c = c->next);
 	firstvis = c;
@@ -2245,9 +2239,12 @@ updatetitle(Client *c) {
 
 void
 updatestatus(void) {
+	Monitor *m;
+
 	if(!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
 		strcpy(stext, "dwm-"VERSION);
-	drawbar(selmon);
+	for(m = mons; m; m = m->next)
+		drawbar(m);
 }
 
 void

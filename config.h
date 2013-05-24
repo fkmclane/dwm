@@ -65,9 +65,11 @@ static const Layout layouts[] = {
 
 /* commands */
 static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "st", "-f", font, "-e", "tmux", NULL };
+//static const char *termcmd[]  = { "st", "-e", "tmux", "-f", font, NULL };
+static const char *termcmd[]  = { "urxvt", NULL };
 static const char *webcmd[]   = { "chromium-browser", NULL };
 static const char *filecmd[]  = { "thunar", NULL };
+static const char *lockcmd[]   = { "slock", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
@@ -75,10 +77,11 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY|ShiftMask,             XK_j,      spawn,          {.v = webcmd } },
 	{ MODKEY|ShiftMask,             XK_h,      spawn,          {.v = filecmd } },
+	{ MODKEY|ShiftMask,             XK_l,      spawn,          {.v = lockcmd } },
 	{ MODKEY|ShiftMask,		XK_s,	   changeopacity,  {.f = -0.1} },
 	{ MODKEY|ShiftMask,		XK_d,	   changeopacity,  {.f = +0.1} },
 	{ MODKEY|ShiftMask,		XK_f,	   setopacity,	   {.f = 1.00} },
- 	{ MODKEY,                       XK_b,      togglebar,      {0} },
+	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
 	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },

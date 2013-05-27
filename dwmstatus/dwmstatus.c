@@ -16,10 +16,10 @@ char *tz = "America/New_York";
 
 static Display *dpy;
 
-static const char * prefixes[4] = {"kB", "MB", "GB", "TB"};
+static const char *prefixes[4] = {"kB", "MB", "GB", "TB"};
 
 typedef struct {
-	char * name;
+	char *name;
 	unsigned long long user, userLow, sys, idle;
 } core;
 
@@ -166,25 +166,18 @@ setstatus(char *str) {
 
 int
 main(void) {
-	char *status;
-	int cpuload;
-	int cputemp;
-	char *memused;
-	int battery;
-	char *time;
-
 	if (!(dpy = XOpenDisplay(NULL))) {
 		fprintf(stderr, "dwmstatus: cannot open display.\n");
 		return 1;
 	}
 
 	for (;;sleep(2)) {
-		cpuload = getcore(cpu);
-		cputemp = gettemp();
-		memused = getmem();
-		battery = getbatt();
-		time = mktimes("%A %d %B %I:%M %p", tz);
-		status = smprintf("\x05[\x01 CPU:\x06 %d%% \x05] [\x01 TEMP:\x06 %d%sC \x05] [\x01 MEM:\x06 %s \x05] [\x01 BATT:\x06 %d%% \x05] [\x01 %s \x05]\n", cpuload, cputemp, "\xB0", memused, battery, time);
+		int cpuload = getcore(cpu);
+		int cputemp = gettemp();
+		char *memused = getmem();
+		int battery = getbatt();
+		char *time = mktimes("%A %d %B %I:%M %p", tz);
+		char *status = smprintf("\x05[\x01 CPU:\x06 %d%%\x05 ] [\x01 TEMP:\x06 %d" "\xB0" "C\x05 ] [\x01 MEM:\x06 %s\x05 ] [\x01 %sBATT:%s %d%%\x05 ] [\x01 %s\x05 ]\n", cpuload, cputemp, memused, battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery, time);
 		setstatus(status);
 		free(memused);
 		free(time);

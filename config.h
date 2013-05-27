@@ -8,7 +8,7 @@ static const char normfgcolor[]     = "#bbbbbb";
 static const char selbordercolor[]  = "#005577";
 static const char selbgcolor[]      = "#005577";
 static const char selfgcolor[]      = "#eeeeee";
-static const char* colors[NumColors][ColLast] = {
+static const char *colors[NumColors][ColLast] = {
 	// border          foreground   background
 	{ normbordercolor, normfgcolor, normbgcolor },  // normal
 	{ selbordercolor,  selfgcolor,  selbgcolor  },  // selected
@@ -69,7 +69,7 @@ static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, 
 static const char *termcmd[]  = { "urxvt", NULL };
 static const char *webcmd[]   = { "chromium-browser", NULL };
 static const char *filecmd[]  = { "thunar", NULL };
-static const char *lockcmd[]   = { "slock", NULL };
+static const char *lockcmd[]  = { "slock", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */

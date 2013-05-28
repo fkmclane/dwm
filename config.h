@@ -27,7 +27,7 @@ static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;     /* False means bottom bar */
 
 /* tagging */
-static const char *tags[] = { "Term", "Web", "File", "Work" };
+static const char *tags[] = { "Term", "Web", "File", "Work" , "Game" };
 
 static const Rule rules[] = {
 	/* xprop(1):

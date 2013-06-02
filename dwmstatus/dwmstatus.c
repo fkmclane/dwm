@@ -12,18 +12,23 @@
 
 #include <X11/Xlib.h>
 
-char *tz = "America/New_York";
+#include <alsa/asoundlib.h>
 
-static Display *dpy;
+const char *tz = "America/New_York";
 
-static const char *prefixes[4] = {"kB", "MB", "GB", "TB"};
+const char *card = "default";
+const char *selement = "Master";
 
 typedef struct {
-	char *name;
+	const char *name;
 	unsigned long long user, userLow, sys, idle;
 } core;
 
-static core *cpu = &(core){"cpu"};
+core *cpu = &(core){"cpu"};
+
+Display *dpy;
+
+const char *prefixes[4] = {"kB", "MB", "GB", "TB"};
 
 char *
 smprintf(char *fmt, ...) {
@@ -130,13 +135,44 @@ getbatt() {
 	return now * 100 / full;
 }
 
+char *
+getvol(const char *card, const char *selement) {
+	snd_mixer_t *mixer;
+	snd_mixer_selem_id_t *sid;
+	snd_mixer_elem_t *element;
+	long min, max;
+
+	long volume;
+	int muted;
+
+	snd_mixer_open(&mixer, 1);
+	snd_mixer_attach(mixer, card);
+	snd_mixer_selem_register(mixer, NULL, NULL);
+	snd_mixer_load(mixer);
+	snd_mixer_selem_id_alloca(&sid);
+	snd_mixer_selem_id_set_index(sid, 0);
+	snd_mixer_selem_id_set_name(sid, selement);
+	element = snd_mixer_find_selem(mixer, sid);
+	snd_mixer_selem_get_playback_volume_range(element, &min, &max);
+
+	snd_mixer_selem_get_playback_volume(element, SND_MIXER_SCHN_FRONT_LEFT, &volume);
+	snd_mixer_selem_get_playback_switch(element, SND_MIXER_SCHN_FRONT_LEFT, &muted);
+
+	snd_mixer_close(mixer);
+
+	if (muted == 0)
+		return smprintf("---");
+
+	return smprintf("%d%%", 100 * volume / max);
+}
+
 void
-settz(char *tzname) {
+settz(const char *tzname) {
 	setenv("TZ", tzname, 1);
 }
 
 char *
-mktimes(char *fmt, char *tzname) {
+mktimes(const char *fmt, const char *tzname) {
 	char buf[129];
 	time_t tim;
 	struct tm *timtm;
@@ -176,11 +212,13 @@ main(void) {
 		int cputemp = gettemp();
 		char *memused = getmem();
 		int battery = getbatt();
+		char *volume = getvol(card, selement);
 		char *time = mktimes("%A %d %B %I:%M %p", tz);
-		char *status = smprintf("\x05[\x01 CPU:\x06 %d%%\x05 ] [\x01 TEMP:\x06 %d" "\xB0" "C\x05 ] [\x01 MEM:\x06 %s\x05 ] [\x01 %sBATT:%s %d%%\x05 ] [\x01 %s\x05 ]\n", cpuload, cputemp, memused, battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery, time);
+		char *status = smprintf("\x05[\x01 CPU:\x06 %d%%\x05 ] [\x01 TEMP:\x06 %d" "\xB0" "C\x05 ] [\x01 MEM:\x06 %s\x05 ] [\x01 %sBATT:%s %d%%\x05 ] [\x01 VOL:\x06 %s\x05 ] [\x01 %s\x05 ]\n", cpuload, cputemp, memused, battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery, volume, time);
 		setstatus(status);
 		free(memused);
 		free(time);
+		free(volume);
 		free(status);
 	}
 
@@ -188,4 +226,3 @@ main(void) {
 
 	return 0;
 }
-

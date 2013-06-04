@@ -214,7 +214,7 @@ main(void) {
 		char *volume = getvol(card, selement);
 		int battery = getbatt();
 		char *time = mktimes("%A %d %B %I:%M %p", tz);
-		char *status = smprintf("\x05[\x01 CPU:\x06 %d%%\x05 ] [\x01 TEMP:\x06 %d" "\xB0" "C\x05 ] [\x01 MEM:\x06 %s\x05 ] [\x01 VOL:\x06 %s\x05 ] [\x01 %sBATT:%s %d%%\x05 ] [\x01 %s\x05 ]\n", cpuload, cputemp, memused, volume, battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery, time);
+		char *status = smprintf("\x05[\x01 CPU:\x06 %d%%\x05 ] [\x01 TEMP:\x06 %d" "\xB0" "C\x05 ] [\x01 MEM:\x06 %s\x05 ] [\x01 VOL:\x06 %s\x05 ] [\x01 %sBATT:%s %d%%\x05 ] [\x01 %s\x05 ]", cpuload, cputemp, memused, volume, battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery, time);
 		setstatus(status);
 		free(memused);
 		free(volume);

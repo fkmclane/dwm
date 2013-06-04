@@ -133,7 +133,7 @@ struct Monitor {
 	float mfact;
 	int nmaster;
 	int num;
-	int by;               /* bar geometry */
+	int by, eby;          /* bar geometries */
 	int mx, my, mw, mh;   /* screen size */
 	int wx, wy, ww, wh;   /* window area  */
 	unsigned int seltags;
@@ -141,11 +141,12 @@ struct Monitor {
 	unsigned int tagset[2];
 	Bool showbar;
 	Bool topbar;
+	Bool extrabar;
 	Client *clients;
 	Client *sel;
 	Client *stack;
 	Monitor *next;
-	Window barwin;
+	Window barwin, extrabarwin;
 	const Layout *lt[2];
 	int titlebarbegin;
 	int titlebarend;
@@ -270,6 +271,7 @@ static void zoom(const Arg *arg);
 /* variables */
 static const char broken[] = "broken";
 static char stext[256];
+static char etext[256];
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 static int bh, blw = 0;      /* bar geometry */
@@ -542,6 +544,8 @@ cleanupmon(Monitor *mon) {
 	}
 	XUnmapWindow(dpy, mon->barwin);
 	XDestroyWindow(dpy, mon->barwin);
+	XUnmapWindow(dpy, mon->extrabarwin);
+	XDestroyWindow(dpy, mon->extrabarwin);
 	free(mon);
 }
 
@@ -612,8 +616,10 @@ configurenotify(XEvent *e) {
 				XFreePixmap(dpy, dc.drawable);
 			dc.drawable = XCreatePixmap(dpy, root, sw, bh, DefaultDepth(dpy, screen));
 			updatebars();
-			for(m = mons; m; m = m->next)
+			for(m = mons; m; m = m->next) {
 				XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+				XMoveResizeWindow(dpy, m->extrabarwin, m->wx, m->eby, m->ww, bh);
+			}
 			focus(NULL);
 			arrange(NULL);
 		}
@@ -684,6 +690,7 @@ createmon(void) {
 	m->nmaster = nmaster;
 	m->showbar = showbar;
 	m->topbar = topbar;
+	m->extrabar = extrabar;
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
@@ -757,7 +764,7 @@ drawbar(Monitor *m) {
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
 		col = m->tagset[m->seltags] & 1 << i ? dc.sel : dc.norm;
-		if ((urg & 1 << i) == True)
+		if(urg & 1 << i)
 			drawtext(tags[i], dc.urg, False);
 		else
 			drawtext(tags[i], col, False);
@@ -795,7 +802,7 @@ drawbar(Monitor *m) {
 		dc.x = x;
 		dc.w = m->ww - x;
 	}
-	m->titlebarend=dc.x;
+	m->titlebarend = dc.x;
 	drawcoloredtext(m, stext);
 
 	for(c = m->clients; c && !ISVISIBLE(c); c = c->next);
@@ -856,6 +863,17 @@ drawbar(Monitor *m) {
 	}
 
 	XCopyArea(dpy, dc.drawable, m->barwin, dc.gc, 0, 0, m->ww, bh, 0, 0);
+
+	if(m->extrabar) {
+		dc.x = 0;
+		dc.w = TEXTW(etext);
+		drawcoloredtext(m, etext);
+		dc.x += dc.w;
+		dc.w = m->ww - dc.x;
+		drawtext(NULL, dc.norm, False);
+		XCopyArea(dpy, dc.drawable, m->extrabarwin, dc.gc, 0, 0, m->ww, bh, 0, 0);
+	}
+
 	XSync(dpy, False);
 }
 
@@ -1009,7 +1027,7 @@ focusonclick(const Arg *arg) {
 	firstvis = c;
 
 	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c))
+		if(ISVISIBLE(c))
 			n++;
 
 	if(n > 0) {
@@ -1029,7 +1047,7 @@ focusonclick(const Arg *arg) {
         while(x < m->titlebarend) {
 		if(c) {
 			w = MIN(TEXTW(c->name), mw);
-			if (x < arg->i && x + w > arg->i) {
+			if(x < arg->i && x + w > arg->i) {
 				focus(c);
 				restack(selmon);
 				break;
@@ -1342,7 +1360,7 @@ manage(Window w, XWindowAttributes *wa) {
 	                (unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 	setclientstate(c, NormalState);
-	if (c->mon == selmon)
+	if(c->mon == selmon)
 		unfocus(selmon->sel, False);
 	c->mon->sel = c;
 	arrange(c->mon);
@@ -1956,6 +1974,7 @@ togglebar(const Arg *arg) {
 	selmon->showbar = !selmon->showbar;
 	updatebarpos(selmon);
 	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by, selmon->ww, bh);
+	XMoveResizeWindow(dpy, selmon->extrabarwin, selmon->wx, selmon->eby, selmon->ww, bh);
 	arrange(selmon);
 }
 
@@ -2056,13 +2075,20 @@ updatebars(void) {
 		.event_mask = ButtonPressMask|ExposureMask
 	};
 	for(m = mons; m; m = m->next) {
-		if (m->barwin)
+		if(m->barwin && (!m->extrabar || m->extrabarwin))
 			continue;
 		m->barwin = XCreateWindow(dpy, root, m->wx, m->by, m->ww, bh, 0, DefaultDepth(dpy, screen),
 		                          CopyFromParent, DefaultVisual(dpy, screen),
 		                          CWOverrideRedirect|CWBackPixmap|CWEventMask, &wa);
 		XDefineCursor(dpy, m->barwin, cursor[CurNormal]);
 		XMapRaised(dpy, m->barwin);
+		if(m->extrabar) {
+			m->extrabarwin = XCreateWindow(dpy, root, m->wx, m->eby, m->ww, bh, 0, DefaultDepth(dpy, screen),
+			                               CopyFromParent, DefaultVisual(dpy, screen),
+			                               CWOverrideRedirect|CWBackPixmap|CWEventMask, &wa);
+			XDefineCursor(dpy, m->extrabarwin, cursor[CurNormal]);
+			XMapRaised(dpy, m->extrabarwin);
+		}
 	}
 }
 
@@ -2074,9 +2100,15 @@ updatebarpos(Monitor *m) {
 		m->wh -= bh;
 		m->by = m->topbar ? m->wy : m->wy + m->wh;
 		m->wy = m->topbar ? m->wy + bh : m->wy;
+		if(m->extrabar) {
+			m->wh -= bh;
+			m->eby = m->topbar ? m->wy + m->wh : m->wy;
+		}
 	}
-	else
+	else {
 		m->by = -bh;
+		m->eby = -bh;
+	}
 }
 
 void
@@ -2249,10 +2281,31 @@ updatetitle(Client *c) {
 
 void
 updatestatus(void) {
+	char buftext[sizeof(stext) + sizeof(etext)];
 	Monitor *m;
 
-	if(!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
+	if(!gettextprop(root, XA_WM_NAME, buftext, sizeof(buftext)))
 		strcpy(stext, "dwm-"VERSION);
+	else {
+		char *extratext = strchr(buftext, '\n');
+		unsigned int size;
+		if(extratext != NULL) {
+			size = (extratext - buftext) / sizeof(char);
+			if(size > sizeof(stext) - 1)
+				size = sizeof(stext) - 1;
+			strncpy(stext, buftext, size);
+			stext[size] = '\0';
+			size = sizeof(etext) - 1;
+			strncpy(etext, extratext, size);
+			etext[size] = '\0';
+		}
+		else {
+			size = sizeof(stext) - 1;
+			strncpy(stext, buftext, size);
+			stext[size] = '\0';
+		}
+	}
+
 	for(m = mons; m; m = m->next)
 		drawbar(m);
 }
@@ -2279,7 +2332,7 @@ updatewmhints(Client *c) {
 		}
 		else {
 			c->isurgent = (wmh->flags & XUrgencyHint) ? True : False;
-			if (c->isurgent)
+			if(c->isurgent)
 				XSetWindowBorder(dpy, c->win, dc.urg[ColBorder]);
 		}
 		if(wmh->flags & InputHint)

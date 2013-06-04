@@ -28,6 +28,7 @@ static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;     /* False means bottom bar */
+static const Bool extrabar          = True;     /* True means an extra status bar */
 
 /* tagging */
 static const char *tags[] = { "Term", "Web", "File", "Work" , "Game" };

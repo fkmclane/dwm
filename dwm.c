@@ -104,6 +104,7 @@ typedef struct {
 	int x, y, w, h;
 	unsigned long norm[ColLast];
 	unsigned long sel[ColLast];
+	unsigned long urg[ColLast];
 	Drawable drawable;
 	GC gc;
 	struct {
@@ -740,6 +741,7 @@ drawbar(Monitor *m) {
 	char posbuf[10];
 	unsigned int i, n = 0, occ = 0, urg = 0;
 	unsigned long *col;
+	unsigned long *ccol;
 	Client *c, *firstvis, *lastvis = NULL;
 	DC seldc;
 
@@ -755,7 +757,10 @@ drawbar(Monitor *m) {
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
 		col = m->tagset[m->seltags] & 1 << i ? dc.sel : dc.norm;
-		drawtext(tags[i], col, urg & 1 << i);
+		if ((urg & 1 << i) == True)
+			drawtext(tags[i], dc.urg, False);
+		else
+			drawtext(tags[i], col, False);
 		drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
 		           occ & 1 << i, urg & 1 << i, col);
 		dc.x += dc.w;
@@ -829,9 +834,11 @@ drawbar(Monitor *m) {
 			if(m->sel == c) seldc = dc;
 			if(c == lastvis) dc.w = ow;
 
-			drawtext(c->name, col, False);
-			if(c != firstvis) drawvline(col);
-			drawsquare(c->isfixed, c->isfloating, False, col);
+			ccol = c->isurgent ? dc.urg : col;
+
+			drawtext(c->name, ccol, False);
+			if(c != firstvis) drawvline(ccol);
+			drawsquare(c->isfixed, c->isfloating, False, ccol);
 
 			dc.x += dc.w;
 			dc.w = ow - dc.w;
@@ -1831,6 +1838,9 @@ setup(void) {
 	dc.sel[ColBorder] = getcolor(selbordercolor);
 	dc.sel[ColBG] = getcolor(selbgcolor);
 	dc.sel[ColFG] = getcolor(selfgcolor);
+	dc.urg[ColBorder] = getcolor(urgbordercolor);
+	dc.urg[ColBG] = getcolor(urgbgcolor);
+	dc.urg[ColFG] = getcolor(urgfgcolor);
 	dc.drawable = XCreatePixmap(dpy, root, DisplayWidth(dpy, screen), bh, DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, NULL);
 	XSetLineAttributes(dpy, dc.gc, 1, LineSolid, CapButt, JoinMiter);
@@ -2267,8 +2277,11 @@ updatewmhints(Client *c) {
 			wmh->flags &= ~XUrgencyHint;
 			XSetWMHints(dpy, c->win, wmh);
 		}
-		else
+		else {
 			c->isurgent = (wmh->flags & XUrgencyHint) ? True : False;
+			if (c->isurgent)
+				XSetWindowBorder(dpy, c->win, dc.urg[ColBorder]);
+		}
 		if(wmh->flags & InputHint)
 			c->neverfocus = !wmh->input;
 		else

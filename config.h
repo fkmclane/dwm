@@ -17,7 +17,7 @@ static const char *colors[NumColors][ColLast] = {
 	{ selbordercolor,  selfgcolor,  selbgcolor  },  // selected
 
 	{ normbordercolor, selbgcolor,  selfgcolor  },  // warning
-	{ normbordercolor, "#ffffff",   "#ff0000"   },  // error
+	{ urgbordercolor,  urgfgcolor,  urgbgcolor  },  // error
 	{ normbordercolor, "#7598b2",   normbgcolor },  // delim
 
 	{ normbordercolor, "#b10000",   normbgcolor },  // hot

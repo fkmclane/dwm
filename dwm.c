@@ -764,12 +764,16 @@ drawbar(Monitor *m) {
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
 		col = m->tagset[m->seltags] & 1 << i ? dc.sel : dc.norm;
-		if(urg & 1 << i)
+		if(urg & 1 << i) {
 			drawtext(tags[i], dc.urg, False);
-		else
+			drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
+			           occ & 1 << i, False, dc.urg);
+		}
+		else {
 			drawtext(tags[i], col, False);
-		drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
-		           occ & 1 << i, urg & 1 << i, col);
+			drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
+			           occ & 1 << i, False, col);
+		}
 		dc.x += dc.w;
 	}
 	dc.w = blw = TEXTW(m->ltsymbol);

@@ -2290,13 +2290,13 @@ updatestatus(void) {
 		char *extratext = strchr(buftext, '\n');
 		unsigned int size;
 		if(extratext != NULL) {
-			size = (extratext - buftext) / sizeof(char);
+			size = extratext - buftext;
 			if(size > sizeof(stext) - 1)
 				size = sizeof(stext) - 1;
 			strncpy(stext, buftext, size);
 			stext[size] = '\0';
 			size = sizeof(etext) - 1;
-			strncpy(etext, extratext, size);
+			strncpy(etext, extratext + 1, size);
 			etext[size] = '\0';
 		}
 		else {

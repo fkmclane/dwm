@@ -8,8 +8,8 @@ static const char normfgcolor[]     = "#bbbbbb";
 static const char selbordercolor[]  = "#005577";
 static const char selbgcolor[]      = "#005577";
 static const char selfgcolor[]      = "#eeeeee";
-static const char urgbordercolor[]  = "#ff0000";
-static const char urgbgcolor[]      = "#005577";
+static const char urgbordercolor[]  = "#cc0000";
+static const char urgbgcolor[]      = "#cc0000";
 static const char urgfgcolor[]      = "#eeeeee";
 static const char *colors[NumColors][ColLast] = {
 	// border          foreground   background

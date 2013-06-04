@@ -14,4 +14,3 @@ die(const char *errstr, ...) {
 	va_end(ap);
 	exit(EXIT_FAILURE);
 }
-

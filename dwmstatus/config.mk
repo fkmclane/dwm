@@ -27,4 +27,3 @@ LDFLAGS = -g ${LIBS}
 
 # compiler and linker
 CC = cc
-

@@ -78,7 +78,7 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,		XK_s,	   changeopacity,  {.f = -0.1} },
 	{ MODKEY|ShiftMask,		XK_d,	   changeopacity,  {.f = +0.1} },
 	{ MODKEY|ShiftMask,		XK_f,	   setopacity,	   {.f = 1.00} },
- 	{ MODKEY,                       XK_b,      togglebar,      {0} },
+	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
 	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
@@ -128,4 +128,3 @@ static Button buttons[] = {
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 };
-

@@ -58,4 +58,3 @@ void drw_map(Drw *drw, int x, int y, unsigned int w, unsigned int h);
 
 /* Text functions */
 void drw_getexts(Drw *drw, const char *text, unsigned int len, Extnts *extnts);
-

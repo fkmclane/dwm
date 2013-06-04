@@ -114,7 +114,7 @@ drw_setfont(Drw *drw, Fnt *font) {
 
 void
 drw_setfg(Drw *drw, Clr *clr) {
-	if(!drw) 
+	if(!drw)
 		return;
 	drw->fg = clr;
 }

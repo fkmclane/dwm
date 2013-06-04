@@ -823,7 +823,7 @@ drawbar(Monitor *m) {
 			tw = TEXTW(c->name);
 			if(tw < mw) extra += (mw - tw); else i++;
 			for(c = c->next; c && !ISVISIBLE(c); c = c->next);
- 		}
+		}
 
 		if(i > 0) mw += extra / i;
 
@@ -851,7 +851,7 @@ drawbar(Monitor *m) {
 			dc.w = ow - dc.w;
 			for(c = c->next; c && !ISVISIBLE(c); c = c->next);
 		} else {
- 			drawtext(NULL, dc.norm, False);
+			drawtext(NULL, dc.norm, False);
 			break;
 		}
 	}
@@ -1740,8 +1740,8 @@ setfocus(Client *c) {
 	if(!c->neverfocus) {
 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
 		XChangeProperty(dpy, root, netatom[NetActiveWindow],
- 		                XA_WINDOW, 32, PropModeReplace,
- 		                (unsigned char *) &(c->win), 1);
+		                XA_WINDOW, 32, PropModeReplace,
+		                (unsigned char *) &(c->win), 1);
 	}
 	sendevent(c, wmatom[WMTakeFocus]);
 }

@@ -27,7 +27,7 @@ static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;     /* False means bottom bar */
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+static const char *tags[] = { "Term", "Web", "File", "Work" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -66,11 +66,15 @@ static const Layout layouts[] = {
 /* commands */
 static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "st", "-f", font, NULL };
+static const char *webcmd[]   = { "chromium-browser", NULL };
+static const char *filecmd[]  = { "thunar", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+	{ MODKEY|ShiftMask,             XK_j,      spawn,          {.v = webcmd } },
+	{ MODKEY|ShiftMask,             XK_h,      spawn,          {.v = filecmd } },
 	{ MODKEY|ShiftMask,		XK_s,	   changeopacity,  {.f = -0.1} },
 	{ MODKEY|ShiftMask,		XK_d,	   changeopacity,  {.f = +0.1} },
 	{ MODKEY|ShiftMask,		XK_f,	   setopacity,	   {.f = 1.00} },

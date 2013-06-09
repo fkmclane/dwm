@@ -44,24 +44,25 @@
 #include "util.h"
 
 /* macros */
-#define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
-#define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
-#define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
-                               * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
-#define ISVISIBLE(C)            ((C->tags & C->mon->tagset[C->mon->seltags]))
-#define LENGTH(X)               (sizeof X / sizeof X[0])
-#define MOUSEMASK               (BUTTONMASK|PointerMotionMask)
-#define WIDTH(X)                ((X)->w + 2 * (X)->bw)
-#define HEIGHT(X)               ((X)->h + 2 * (X)->bw)
-#define TAGMASK                 ((1 << LENGTH(tags)) - 1)
-#define TEXTW(X)                (textnw(X, strlen(X)) + dc.font.height)
+#define BUTTONMASK                     (ButtonPressMask|ButtonReleaseMask)
+#define CLEANMASK(mask)                (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
+#define INTERSECT(x,y,w,h,m)           (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
+                                       * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
+#define ISVISIBLE(C)                   ((C->tags & C->mon->tagset[C->mon->seltags]))
+#define LENGTH(X)                      (sizeof X / sizeof X[0])
+#define MOUSEMASK                      (BUTTONMASK|PointerMotionMask)
+#define WIDTH(X)                       ((X)->w + 2 * (X)->bw)
+#define HEIGHT(X)                      ((X)->h + 2 * (X)->bw)
+#define TAGMASK                        ((1 << LENGTH(tags)) - 1)
+#define TEXTW(X)                       (textnw(X, strlen(X)) + dc.font.height)
+#define drawtext(text, col, invert)    drawtext2(text, col, invert, True)
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast };        /* cursor */
 enum { ColBorder, ColFG, ColBG, ColLast };              /* color */
 enum { NetSupported, NetWMName, NetWMState,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-       NetWMWindowTypeDialog, NetClientList, NetLast };     /* EWMH atoms */
+       NetWMWindowTypeDialog, NetClientList, NetWMWindowOpacity, NetLast };     /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }; /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast };             /* clicks */
@@ -92,6 +93,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen;
+	float opacity;
 	Client *next;
 	Client *snext;
 	Monitor *mon;
@@ -144,6 +146,8 @@ struct Monitor {
 	Monitor *next;
 	Window barwin;
 	const Layout *lt[2];
+	int titlebarbegin;
+	int titlebarend;
 };
 
 typedef struct {
@@ -153,7 +157,10 @@ typedef struct {
 	unsigned int tags;
 	Bool isfloating;
 	int monitor;
+	float opacity;
 } Rule;
+
+enum { ColNorm, ColSel, ColUrg, ColErr, ColDelim, ColHot, ColMed, ColCool, NumColors };
 
 /* function declarations */
 static void applyrules(Client *c);
@@ -163,6 +170,7 @@ static void arrangemon(Monitor *m);
 static void attach(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
+static void changeopacity(const Arg *arg);
 static void checkotherwm(void);
 static void cleanup(void);
 static void cleanupmon(Monitor *mon);
@@ -179,10 +187,13 @@ static Monitor *dirtomon(int dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
 static void drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]);
-static void drawtext(const char *text, unsigned long col[ColLast], Bool invert);
+static void drawtext2(const char *text, unsigned long col[ColLast], Bool invert, Bool pad);
+static void drawvline(unsigned long col[ColLast]);
+static void drawcoloredtext(Monitor *m, char *text);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
 static void focus(Client *c);
+static void focusonclick(const Arg *arg);
 static void focusin(XEvent *e);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
@@ -203,7 +214,8 @@ static void monocle(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
 static Client *nexttiled(Client *c);
-static void pop(Client *);
+static void opacity(Client *c);
+static void pop(Client *c);
 static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
@@ -220,6 +232,7 @@ static void setfocus(Client *c);
 static void setfullscreen(Client *c, Bool fullscreen);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
+static void setopacity(const Arg *arg);
 static void setup(void);
 static void showhide(Client *c);
 static void sigchld(int unused);
@@ -284,6 +297,7 @@ static Display *dpy;
 static DC dc;
 static Monitor *mons = NULL, *selmon = NULL;
 static Window root;
+unsigned long barcolors[NumColors][ColLast];
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -313,6 +327,7 @@ applyrules(Client *c) {
 		&& (!r->instance || strstr(instance, r->instance)))
 		{
 			c->isfloating = r->isfloating;
+			c->opacity = r->opacity;
 			c->tags |= r->tags;
 			for(m = mons; m && m->num != r->monitor; m = m->next);
 			if(m)
@@ -450,10 +465,12 @@ buttonpress(XEvent *e) {
 		}
 		else if(ev->x < x + blw)
 			click = ClkLtSymbol;
-		else if(ev->x > selmon->ww - TEXTW(stext))
+		else if(ev->x > selmon->titlebarend)
 			click = ClkStatusText;
-		else
+		else {
+			arg.ui = ev->x;
 			click = ClkWinTitle;
+		}
 	}
 	else if((c = wintoclient(ev->window))) {
 		focus(c);
@@ -462,7 +479,16 @@ buttonpress(XEvent *e) {
 	for(i = 0; i < LENGTH(buttons); i++)
 		if(click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+			buttons[i].func((click == ClkTagBar || click == ClkWinTitle) && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+}
+
+void
+changeopacity(const Arg *arg) {
+	if(!arg || !arg->f || !selmon->sel)
+		return;
+
+	selmon->sel->opacity += arg->f;
+	opacity(selmon->sel);
 }
 
 void
@@ -710,16 +736,21 @@ dirtomon(int dir) {
 
 void
 drawbar(Monitor *m) {
-	int x;
-	unsigned int i, occ = 0, urg = 0;
+	int x, a = 0, s = 0, ow, mw = 0, extra, tw;
+	char posbuf[10];
+	unsigned int i, n = 0, occ = 0, urg = 0;
 	unsigned long *col;
-	Client *c;
+	Client *c, *firstvis, *lastvis = NULL;
+	DC seldc;
 
 	for(c = m->clients; c; c = c->next) {
+		if(ISVISIBLE(c))
+			n++;
 		occ |= c->tags;
 		if(c->isurgent)
 			urg |= c->tags;
 	}
+
 	dc.x = 0;
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
@@ -734,26 +765,95 @@ drawbar(Monitor *m) {
 	dc.x += dc.w;
 	x = dc.x;
 	if(m == selmon) { /* status is only drawn on selected monitor */
-		dc.w = TEXTW(stext);
+		if(m->lt[m->sellt]->arrange == monocle){
+			dc.x = x;
+			for(c = nexttiled(m->clients), a = 0, s = 0; c; c = nexttiled(c->next), a++)
+				if(c == m->stack)
+					s = a;
+			if(!s && a)
+				s = a;
+			snprintf(posbuf, LENGTH(posbuf), "[%d/%d]", s, a);
+			dc.w= TEXTW(posbuf);
+			drawtext(posbuf, dc.norm, False);
+			x= dc.x + dc.w;
+		}
+
+		dc.w = 0;
+		char *buf = stext, *ptr = buf;
+		while(*ptr) {
+			for(i = 0; *ptr < 0 || *ptr > NumColors; i++, ptr++);
+			dc.w += textnw(buf, i);
+			buf = ++ptr;
+		}
+		dc.w+=dc.font.height;
 		dc.x = m->ww - dc.w;
 		if(dc.x < x) {
 			dc.x = x;
 			dc.w = m->ww - x;
 		}
-		drawtext(stext, dc.norm, False);
+		m->titlebarend=dc.x;
+		drawcoloredtext(m, stext);
 	}
-	else
+	else {
 		dc.x = m->ww;
-	if((dc.w = dc.x - x) > bh) {
-		dc.x = x;
-		if(m->sel) {
-			col = m == selmon ? dc.sel : dc.norm;
-			drawtext(m->sel->name, col, False);
-			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
-		}
-		else
-			drawtext(NULL, dc.norm, False);
+		m->titlebarbegin = dc.x;
 	}
+
+	for(c = m->clients; c && !ISVISIBLE(c); c = c->next);
+	firstvis = c;
+
+	col = m == selmon ? dc.sel : dc.norm;
+	dc.w = dc.x - x;
+	dc.x = x;
+
+	if(n > 0) {
+		mw = dc.w / n;
+		extra = 0;
+		seldc = dc;
+		i = 0;
+
+		while(c) {
+			lastvis = c;
+			tw = TEXTW(c->name);
+			if(tw < mw) extra += (mw - tw); else i++;
+			for(c = c->next; c && !ISVISIBLE(c); c = c->next);
+ 		}
+
+		if(i > 0) mw += extra / i;
+
+		c = firstvis;
+		x = dc.x;
+	}
+	m->titlebarbegin = dc.x;
+	while(dc.w > bh) {
+		if(c) {
+			ow = dc.w;
+			tw = TEXTW(c->name);
+			dc.w = MIN(ow, tw);
+
+			if(dc.w > mw) dc.w = mw;
+			if(m->sel == c) seldc = dc;
+			if(c == lastvis) dc.w = ow;
+
+			drawtext(c->name, col, False);
+			if(c != firstvis) drawvline(col);
+			drawsquare(c->isfixed, c->isfloating, False, col);
+
+			dc.x += dc.w;
+			dc.w = ow - dc.w;
+			for(c = c->next; c && !ISVISIBLE(c); c = c->next);
+		} else {
+ 			drawtext(NULL, dc.norm, False);
+			break;
+		}
+	}
+
+	if(m == selmon && m->sel && ISVISIBLE(m->sel)) {
+		dc = seldc;
+		drawtext(m->sel->name, col, True);
+		drawsquare(m->sel->isfixed, m->sel->isfloating, True, col);
+	}
+
 	XCopyArea(dpy, dc.drawable, m->barwin, dc.gc, 0, 0, m->ww, bh, 0, 0);
 	XSync(dpy, False);
 }
@@ -779,7 +879,7 @@ drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]) {
 }
 
 void
-drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
+drawtext2(const char *text, unsigned long col[ColLast], Bool invert, Bool pad) {
 	char buf[256];
 	int i, x, y, h, len, olen;
 
@@ -790,7 +890,7 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 	olen = strlen(text);
 	h = dc.font.ascent + dc.font.descent;
 	y = dc.y + (dc.h / 2) - (h / 2) + dc.font.ascent;
-	x = dc.x + (h / 2);
+	x = dc.x + ((pad ? (dc.font.ascent + dc.font.descent) : 0) / 2);
 	/* shorten text if necessary */
 	for(len = MIN(olen, sizeof buf); len && textnw(text, len) > dc.w - h; len--);
 	if(!len)
@@ -803,6 +903,45 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 		XmbDrawString(dpy, dc.drawable, dc.font.set, dc.gc, x, y, buf, len);
 	else
 		XDrawString(dpy, dc.drawable, dc.gc, x, y, buf, len);
+}
+
+void
+drawvline(unsigned long col[ColLast]) {
+	XGCValues gcv;
+
+	gcv.foreground = col[ColFG];
+	XChangeGC(dpy, dc.gc, GCForeground, &gcv);
+	XDrawLine(dpy, dc.drawable, dc.gc, dc.x, dc.y, dc.x, dc.y + (dc.font.ascent + dc.font.descent + 2));
+}
+
+void
+drawcoloredtext(Monitor *m, char *text) {
+	Bool first=True;
+	char *buf = text, *ptr = buf, c = 1;
+	unsigned long *col = barcolors[0];
+	int i, ox = dc.x;
+
+	while(*ptr) {
+		for(i = 0; *ptr < 0 || *ptr > NumColors; i++, ptr++);
+		if(!*ptr) break;
+		c = *ptr;
+		*ptr = 0;
+		if(i) {
+			dc.w = m->ww - dc.x;
+			drawtext2(buf, col, False, first);
+			dc.x += textnw(buf, i);// + textnw(&c,1);
+			if(first) dc.x += (dc.font.ascent + dc.font.descent) / 2;
+			first = False;
+		} else if(first) {
+			ox = dc.x += textnw(&c,1);
+		}
+		*ptr = c;
+		col = barcolors[c - 1];
+		buf = ++ptr;
+	}
+	//if(!first) dc.x -= (dc.font.ascent+dc.font.descent)/2;
+	drawtext2(buf, col, False, False);
+	dc.x = ox;
 }
 
 void
@@ -857,6 +996,50 @@ focus(Client *c) {
 	}
 	selmon->sel = c;
 	drawbars();
+}
+
+void
+focusonclick(const Arg *arg) {
+	int x, w, mw = 0, tw, n = 0, i = 0, extra = 0;
+	Monitor *m = selmon;
+	Client *c, *firstvis;
+
+	for(c = m->clients; c && !ISVISIBLE(c); c = c->next);
+	firstvis = c;
+
+	for(c = m->clients; c; c = c->next)
+		if (ISVISIBLE(c))
+			n++;
+
+	if(n > 0) {
+		mw = (m->titlebarend - m->titlebarbegin) / n;
+		c = firstvis;
+		while(c) {
+			tw = TEXTW(c->name);
+			if(tw < mw) extra += (mw - tw); else i++;
+			for(c = c->next; c && !ISVISIBLE(c); c = c->next);
+		}
+		if(i > 0) mw += extra / i;
+	}
+
+	x = m->titlebarbegin;
+
+	c = firstvis;
+        while(x < m->titlebarend) {
+		if(c) {
+			w = MIN(TEXTW(c->name), mw);
+			if (x < arg->i && x + w > arg->i) {
+				focus(c);
+				restack(selmon);
+				break;
+			} else
+				x+=w;
+
+			for(c = c->next; c && !ISVISIBLE(c); c = c->next);
+		} else {
+			break;
+		}
+        }
 }
 
 void
@@ -1113,6 +1296,7 @@ manage(Window w, XWindowAttributes *wa) {
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
 	c->win = w;
 	updatetitle(c);
+	opacity(c);
 	if(XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
 		c->mon = t->mon;
 		c->tags = t->tags;
@@ -1278,6 +1462,17 @@ Client *
 nexttiled(Client *c) {
 	for(; c && (c->isfloating || !ISVISIBLE(c)); c = c->next);
 	return c;
+}
+
+void
+opacity(Client *c) {
+	if(c->opacity >= 0 && c->opacity <= 1) {
+		unsigned long real_opacity[] = { c->opacity * 0xffffffff };
+		XChangeProperty(dpy, c->win, netatom[NetWMWindowOpacity], XA_CARDINAL,
+				32, PropModeReplace, (unsigned char *)real_opacity,
+				1);
+	} else
+		XDeleteProperty(dpy, c->win, netatom[NetWMWindowOpacity]);
 }
 
 void
@@ -1588,6 +1783,15 @@ setmfact(const Arg *arg) {
 }
 
 void
+setopacity(const Arg *arg) {
+	if(!arg || !arg->f || !selmon->sel)
+		return;
+
+	selmon->sel->opacity = arg->f;
+	opacity(selmon->sel);
+}
+
+void
 setup(void) {
 	XSetWindowAttributes wa;
 
@@ -1615,7 +1819,14 @@ setup(void) {
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
+	netatom[NetWMWindowOpacity] = XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", False);
 	/* init cursors */
+	unsigned int c;
+	for(c = 0; c < NumColors; c++) {
+		barcolors[c][ColBorder] = getcolor(colors[c][ColBorder]);
+		barcolors[c][ColFG] = getcolor(colors[c][ColFG]);
+		barcolors[c][ColBG] = getcolor(colors[c][ColBG]);
+	}
 	cursor[CurNormal] = XCreateFontCursor(dpy, XC_left_ptr);
 	cursor[CurResize] = XCreateFontCursor(dpy, XC_sizing);
 	cursor[CurMove] = XCreateFontCursor(dpy, XC_fleur);

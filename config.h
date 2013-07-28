@@ -31,7 +31,7 @@ static const Bool topbar            = True;     /* False means bottom bar */
 static const Bool extrabar          = True;     /* True means an extra status bar */
 
 /* tagging */
-static const char *tags[] = { "Term", "Web", "File", "Work" , "Game" };
+static const char *tags[] = { "Term", "Web", "Chat", "File", "Work" , "Game" };
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -40,8 +40,8 @@ static const Rule rules[] = {
 	 */
 	/* class      instance    title       tags mask     isfloating   monitor     opacity */
 	{ "Gimp",     NULL,       NULL,       0,            True,        -1,         -1 },
-	{ "Firefox",  NULL,       NULL,       1 << 8,       False,       -1,         -1 },
 	{ "UXTerm",   NULL,       NULL,       0,            False,       -1,         0.60 },
+	{ "Steam",    NULL,       NULL,       0,            True,      	 -1,         -1 },
 };
 
 /* layout(s) */

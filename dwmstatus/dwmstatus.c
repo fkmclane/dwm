@@ -14,21 +14,28 @@
 
 #include <alsa/asoundlib.h>
 
-const char *tz = "America/New_York";
-
-const char *card = "default";
-const char *selement = "Master";
-
 typedef struct {
 	const char *name;
 	unsigned long long user, userLow, sys, idle;
 } core;
 
+//CPU
 core *cpu = &(core){"cpu"};
 
-Display *dpy;
-
+//Memory
 const char *prefixes[4] = {"kB", "MB", "GB", "TB"};
+
+//Volume
+#define CARD "default"
+#define SELEMENT "Master"
+
+//Battery
+#define BATTERY "BAT1"
+
+//Time
+#define TZ "America/New_York"
+
+Display *dpy;
 
 char *
 smprintf(char *fmt, ...) {
@@ -98,44 +105,19 @@ gettemp() {
 	return temp / 1000;
 }
 
-char *
+int
 getmem() {
 	FILE *file;
-	float kilobytes;
 	int total, free, buffers, cache;
-	int prefix = 0;
 
 	file = fopen("/proc/meminfo", "r");
 	fscanf(file, "MemTotal: %d kB\nMemFree: %d kB\nBuffers: %d kB\nCached: %d kB\n", &total, &free, &buffers, &cache);
 	fclose(file);
 
-	kilobytes = total - free - buffers - cache;
-
-	while(kilobytes > 1024) {
-		kilobytes /= 1024;
-		prefix++;
-	}
-
-	return smprintf("%.1f %s", kilobytes, prefixes[prefix]);
+	return total - free - buffers - cache;
 }
 
 int
-getbatt() {
-	FILE *file;
-	int full, now;
-
-	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/BAT0/charge_full", "r");
-	fscanf(file, "%d\n", &full);
-	fclose(file);
-
-	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/BAT0/charge_now", "r");
-	fscanf(file, "%d\n", &now);
-	fclose(file);
-
-	return now * 100 / full;
-}
-
-char *
 getvol(const char *card, const char *selement) {
 	snd_mixer_t *mixer;
 	snd_mixer_selem_id_t *sid;
@@ -161,14 +143,25 @@ getvol(const char *card, const char *selement) {
 	snd_mixer_close(mixer);
 
 	if (muted == 0)
-		return smprintf("---");
+		return -1;
 
-	return smprintf("%d%%", 100 * volume / max);
+	return volume * 100 / max;
 }
 
-void
-settz(const char *tzname) {
-	setenv("TZ", tzname, 1);
+int
+getbatt() {
+	FILE *file;
+	int full, now;
+
+	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/" BATTERY "/energy_full", "r");
+	fscanf(file, "%d\n", &full);
+	fclose(file);
+
+	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/" BATTERY "/energy_now", "r");
+	fscanf(file, "%d\n", &now);
+	fclose(file);
+
+	return now * 100 / full;
 }
 
 char *
@@ -178,7 +171,7 @@ mktimes(const char *fmt, const char *tzname) {
 	struct tm *timtm;
 
 	memset(buf, 0, sizeof(buf));
-	settz(tzname);
+	setenv("TZ", tzname, 1);
 	tim = time(NULL);
 	timtm = localtime(&tim);
 	if (timtm == NULL) {
@@ -208,16 +201,36 @@ main(void) {
 	}
 
 	for (;;sleep(2)) {
-		int cpuload = getcore(cpu);
-		int cputemp = gettemp();
-		char *memused = getmem();
-		char *volume = getvol(card, selement);
+		int load = getcore(cpu);
+		char *cpu = smprintf("CPU:\x06 %d%%", load);
+
+		int temperature = gettemp();
+		char *temp = smprintf("TEMP:\x06 %d" "\xB0" "C", temperature);
+
+		float memused = getmem();
+		int memprefix = 0;
+		while(memused > 1024) {
+			memused /= 1024;
+			memprefix++;
+		}
+		char *mem = smprintf("MEM:\x06 %.1f %s", memused, prefixes[memprefix]);
+
+		int volume = getvol(CARD, SELEMENT);
+		char *vol = volume < 0 ? smprintf("VOL:\x06 ---") : smprintf("VOL:\x06 %d%%", volume);
+
 		int battery = getbatt();
-		char *time = mktimes("%A %d %B %I:%M %p", tz);
-		char *status = smprintf("\x05[\x01 CPU:\x06 %d%%\x05 ] [\x01 TEMP:\x06 %d" "\xB0" "C\x05 ] [\x01 MEM:\x06 %s\x05 ] [\x01 VOL:\x06 %s\x05 ] [\x01 %sBATT:%s %d%%\x05 ] [\x01 %s\x05 ]", cpuload, cputemp, memused, volume, battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery, time);
+		char *batt = smprintf("%sBATT:%s %d%%", battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery);
+
+		char *time = mktimes("%A %d %B %I:%M %p", TZ);
+
+		char *status = smprintf("\x05[\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ]", cpu, temp, mem, vol, batt, time);
 		setstatus(status);
-		free(memused);
-		free(volume);
+
+		free(cpu);
+		free(temp);
+		free(mem);
+		free(vol);
+		free(batt);
 		free(time);
 		free(status);
 	}

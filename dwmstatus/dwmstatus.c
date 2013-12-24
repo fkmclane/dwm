@@ -149,17 +149,21 @@ getvol(const char *card, const char *selement) {
 }
 
 int
-getbatt() {
+getbatt(const char *battery) {
 	FILE *file;
 	int full, now;
 
-	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/" BATTERY "/energy_full", "r");
+	char *file_full = smprintf("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/%s/energy_full", battery);
+	file = fopen(file_full, "r");
 	fscanf(file, "%d\n", &full);
 	fclose(file);
+	free(file_full);
 
-	file = fopen("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/" BATTERY "/energy_now", "r");
+	char *file_now = smprintf("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/%s/energy_now", battery);
+	file = fopen(file_now, "r");
 	fscanf(file, "%d\n", &now);
 	fclose(file);
+	free(file_now);
 
 	return now * 100 / full;
 }
@@ -218,7 +222,7 @@ main(void) {
 		int volume = getvol(CARD, SELEMENT);
 		char *vol = volume < 0 ? smprintf("VOL:\x06 ---") : smprintf("VOL:\x06 %d%%", volume);
 
-		int battery = getbatt();
+		int battery = getbatt(BATTERY);
 		char *batt = smprintf("%sBATT:%s %d%%", battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery);
 
 		char *time = mktimes("%A %d %B %I:%M %p", TZ);

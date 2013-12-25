@@ -222,19 +222,27 @@ main(void) {
 		int volume = getvol(CARD, SELEMENT);
 		char *vol = volume < 0 ? smprintf("VOL:\x06 ---") : smprintf("VOL:\x06 %d%%", volume);
 
+#ifdef BATTERY
 		int battery = getbatt(BATTERY);
 		char *batt = smprintf("%sBATT:%s %d%%", battery <= 5 ? "\x04" : "", battery <= 5 ? "" : "\x06", battery);
+#endif
 
-		char *time = mktimes("%A %d %B %I:%M %p", TZ);
+		char *time = mktimes("%A %d %B %H:%M", TZ);
 
+#ifdef BATTERY
 		char *status = smprintf("\x05[\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ]", cpu, temp, mem, vol, batt, time);
+#else
+		char *status = smprintf("\x05[\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ] [\x01 %s\x05 ]", cpu, temp, mem, vol, time);
+#endif
 		setstatus(status);
 
 		free(cpu);
 		free(temp);
 		free(mem);
 		free(vol);
+#ifdef BATTERY
 		free(batt);
+#endif
 		free(time);
 		free(status);
 	}

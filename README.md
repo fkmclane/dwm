@@ -2,8 +2,18 @@ dwm - dynamic window manager
 ============================
 dwm is an extremely fast, small, and dynamic window manager for X.
 
-This is my own modified version that includes fancy colored bar clickable and my own version of opacity.  Opacity requires an X compositor such as xcompmgr.  Also included here is my own dwmstatus program that will show current CPU usage, Memory Usage, and the current time.  It is loosely based on the sample dwmstatus from http://dwm.suckless.org/.
+Patches:
+	- Color codes for status
+	- Urgency color
+	- Optional extra status bar
 
+Features in dwmstatus:
+	- CPU usage (Multiple CPU support)
+	- Core temperature (Multiple thermal zone support)
+	- Memory usage
+	- ALSA volume (Optional)
+	- Battery percentage (Optional)
+	- Current time (Multiple timezone support)
 
 Requirements
 ------------

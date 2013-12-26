@@ -9,6 +9,11 @@ typedef struct {
 	const char *id;
 } Temp;
 
+typedef struct {
+	const char *name;
+	const char *id;
+} TZ;
+
 int getcore(Core *cpu);
 int gettemp(const char *thermal);
 int getmem();

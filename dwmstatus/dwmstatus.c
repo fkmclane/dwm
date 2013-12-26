@@ -21,7 +21,7 @@ main(void) {
 
 	int cpu_v, temp_v, mem_u, vol_v, batt_v;
 	float mem_v;
-	char *cpu_s, *temp_s, *mem_s, *vol_s, *batt_s, *time_s, *status;
+	char *cpu_s, *temp_s, *mem_s, *vol_s, *batt_s, *time_v, *time_s, *status;
 
 	for (;;usleep(interval * 1000)) {
 		status = smprintf("\x05");
@@ -67,9 +67,13 @@ main(void) {
 			free(batt_s);
 		}
 
-		time_s = mktimes(fmt, tz);
-		addstatus(status, time_s);
-		free(time_s);
+		for (int i = 0; i < LENGTH(tz); i++) {
+			time_v = mktimes(fmt, tz[i].id);
+			time_s = smprintf("%s:\x06 %s", tz[i].name, time_v);
+			free(time_v);
+			addstatus(status, time_s);
+			free(time_s);
+		}
 
 		setstatus(dpy, status);
 		free(status);

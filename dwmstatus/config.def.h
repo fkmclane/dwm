@@ -24,4 +24,6 @@ static const char batt[]        = "BAT0";
 
 /* Time */
 static const char fmt[]         = "%A %d %B %I:%M %p";
-static const char tz[]          = "America/New_York";
+static const TZ tz[]          = {
+	{ "TIME", "America/New_York" },
+};

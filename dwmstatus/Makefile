@@ -2,13 +2,13 @@
 
 include config.mk
 
-SRC = ${NAME}.c
+SRC = data.c dwmstatus.c util.c
 OBJ = ${SRC:.c=.o}
 
-all: options ${NAME}
+all: options dwmstatus
 
 options:
-	@echo ${NAME} build options:
+	@echo dwmstatus build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
@@ -17,33 +17,37 @@ options:
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-${OBJ}: config.mk
+${OBJ}: config.h config.mk
 
-${NAME}: ${OBJ}
+config.h:
+	@echo creating $@ from config.def.h
+	@cp config.def.h $@
+
+dwmstatus: ${OBJ}
 	@echo CC -o $@
 	@${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
 	@echo cleaning
-	@rm -f ${NAME} ${OBJ} ${NAME}-${VERSION}.tar.gz
+	@rm -f dwmstatus ${OBJ} dwmstatus-${VERSION}.tar.gz
 
 dist: clean
 	@echo creating dist tarball
-	@mkdir -p ${NAME}-${VERSION}
+	@mkdir -p dwmstatus-${VERSION}
 	@cp -R Makefile config.mk LICENSE \
-		${SRC} ${NAME}-${VERSION}
-	@tar -cf ${NAME}-${VERSION}.tar ${NAME}-${VERSION}
-	@gzip ${NAME}-${VERSION}.tar
-	@rm -rf ${NAME}-${VERSION}
+		${SRC} dwmstatus-${VERSION}
+	@tar -cf dwmstatus-${VERSION}.tar dwmstatus-${VERSION}
+	@gzip dwmstatus-${VERSION}.tar
+	@rm -rf dwmstatus-${VERSION}
 
 install: all
 	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@cp -f ${NAME} ${DESTDIR}${PREFIX}/bin
+	@cp -f dwmstatus ${DESTDIR}${PREFIX}/bin
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/${NAME}
 
 uninstall:
 	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
-	@rm -f ${DESTDIR}${PREFIX}/bin/${NAME}
+	@rm -f ${DESTDIR}${PREFIX}/bin/dwmstatus
 
 .PHONY: all options clean dist install uninstall

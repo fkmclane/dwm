@@ -12,17 +12,17 @@ static const char urgbordercolor[]  = "#cc0000";
 static const char urgbgcolor[]      = "#cc0000";
 static const char urgfgcolor[]      = "#eeeeee";
 static const char *colors[NumColors][ColLast] = {
-	// border          foreground   background
-	{ normbordercolor, normfgcolor, normbgcolor },  // normal
-	{ selbordercolor,  selfgcolor,  selbgcolor  },  // selected
+	/* border          foreground   background */
+	{ normbordercolor, normfgcolor, normbgcolor },  /* normal */
+	{ selbordercolor,  selfgcolor,  selbgcolor  },  /* selected */
 
-	{ normbordercolor, selbgcolor,  selfgcolor  },  // warning
-	{ urgbordercolor,  urgfgcolor,  urgbgcolor  },  // error
-	{ normbordercolor, "#7598b2",   normbgcolor },  // delim
+	{ normbordercolor, selbgcolor,  selfgcolor  },  /* warning */
+	{ urgbordercolor,  urgfgcolor,  urgbgcolor  },  /* error */
+	{ normbordercolor, "#7598b2",   normbgcolor },  /* delim */
 
-	{ normbordercolor, "#b10000",   normbgcolor },  // hot
-	{ normbordercolor, "#b15c00",   normbgcolor },  // medium
-	{ normbordercolor, "#6cb100",   normbgcolor },  // cool
+	{ normbordercolor, "#b10000",   normbgcolor },  /* hot */
+	{ normbordercolor, "#b15c00",   normbgcolor },  /* medium */
+	{ normbordercolor, "#6cb100",   normbgcolor },  /* cool */
 };
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */

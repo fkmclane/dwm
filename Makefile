@@ -6,7 +6,7 @@ include config.mk
 SRC = drw.c dwm.c util.c
 OBJ = ${SRC:.c=.o}
 
-all: options dwm dwmstatus
+all: options dwm
 
 options:
 	@echo dwm build options:
@@ -27,9 +27,6 @@ config.h:
 dwm: ${OBJ}
 	@echo CC -o $@
 	@${CC} -o $@ ${OBJ} ${LDFLAGS}
-
-dwmstatus:
-	@make -C dwmstatus
 
 clean:
 	@echo cleaning

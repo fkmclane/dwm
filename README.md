@@ -3,17 +3,17 @@ dwm - dynamic window manager
 dwm is an extremely fast, small, and dynamic window manager for X.
 
 Patches:
-	- Color codes for status
-	- Urgency color
-	- Optional extra status bar
+- Color codes for status
+- Urgency color
+- Optional extra status bar
 
 Features in dwmstatus:
-	- CPU usage (Multiple CPU support)
-	- Core temperature (Multiple thermal zone support)
-	- Memory usage
-	- ALSA volume (Optional)
-	- Battery percentage (Optional)
-	- Current time (Multiple timezone support)
+- CPU usage (Multiple CPU support)
+- Core temperature (Multiple thermal zone support)
+- Memory usage
+- ALSA volume (Optional)
+- Battery percentage (Optional)
+- Current time (Multiple timezone support)
 
 Requirements
 ------------

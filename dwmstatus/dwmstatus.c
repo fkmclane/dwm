@@ -22,6 +22,9 @@ typedef struct {
 //CPU
 core *cpu = &(core){"cpu"};
 
+//Temperature
+#define THERMAL thermal_zone1
+
 //Memory
 const char *prefixes[4] = {"kB", "MB", "GB", "TB"};
 
@@ -94,13 +97,15 @@ getcore(core *cpu) {
 }
 
 int
-gettemp() {
+gettemp(const char *thermal) {
 	FILE *file;
 	int temp;
 
-	file = fopen("/sys/devices/virtual/thermal/thermal_zone0/temp", "r");
+	char *file_thermal = smprintf("/sys/class/thermal/%s/temp", thermal);
+	file = fopen(file_thermal, "r");
 	fscanf(file, "%d\n", &temp);
 	fclose(file);
+	free(file_thermal);
 
 	return temp / 1000;
 }
@@ -153,13 +158,13 @@ getbatt(const char *battery) {
 	FILE *file;
 	int full, now;
 
-	char *file_full = smprintf("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/%s/energy_full", battery);
+	char *file_full = smprintf("/sys/class/power_supply/%s/energy_full", battery);
 	file = fopen(file_full, "r");
 	fscanf(file, "%d\n", &full);
 	fclose(file);
 	free(file_full);
 
-	char *file_now = smprintf("/sys/bus/acpi/drivers/battery/PNP0C0A:00/power_supply/%s/energy_now", battery);
+	char *file_now = smprintf("/sys/class/power_supply/%s/energy_now", battery);
 	file = fopen(file_now, "r");
 	fscanf(file, "%d\n", &now);
 	fclose(file);
@@ -208,7 +213,7 @@ main(void) {
 		int load = getcore(cpu);
 		char *cpu = smprintf("CPU:\x06 %d%%", load);
 
-		int temperature = gettemp();
+		int temperature = gettemp(THERMAL);
 		char *temp = smprintf("TEMP:\x06 %d" "\xB0" "C", temperature);
 
 		float memused = getmem();

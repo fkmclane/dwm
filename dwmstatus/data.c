@@ -1,12 +1,10 @@
 #define _BSD_SOURCE
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include <alsa/asoundlib.h>
 
 #include "data.h"
-#include "util.h"
 
 int
 getcore(Core *cpu) {
@@ -37,13 +35,13 @@ getcore(Core *cpu) {
 int
 gettemp(const char *thermal) {
 	FILE *file;
+	char path[64];
 	int temp;
 
-	char *fthermal = smprintf("/sys/class/thermal/%s/temp", thermal);
-	file = fopen(fthermal, "r");
+	snprintf(path, sizeof(path), "/sys/class/thermal/%s/temp", thermal);
+	file = fopen(path, "r");
 	fscanf(file, "%d\n", &temp);
 	fclose(file);
-	free(fthermal);
 
 	return temp / 1000;
 }
@@ -94,26 +92,24 @@ getvol(const char *card, const char *selement) {
 int
 getbatt(const char *batt) {
 	FILE *file;
+	char path[64];
 	int full, now;
 
-	char *ffull = smprintf("/sys/class/power_supply/%s/energy_full", batt);
-	file = fopen(ffull, "r");
+	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_full", batt);
+	file = fopen(path, "r");
 	fscanf(file, "%d\n", &full);
 	fclose(file);
-	free(ffull);
 
-	char *fnow = smprintf("/sys/class/power_supply/%s/energy_now", batt);
-	file = fopen(fnow, "r");
+	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_now", batt);
+	file = fopen(path, "r");
 	fscanf(file, "%d\n", &now);
 	fclose(file);
-	free(fnow);
 
 	return now * 100 / full;
 }
 
-char *
-mktimes(const char *fmt, const char *tz) {
-	char buf[128];
+void
+mktimes(char *buf, const char *fmt, const char *tz) {
 	time_t rtime;
 	struct tm *itime;
 
@@ -121,7 +117,5 @@ mktimes(const char *fmt, const char *tz) {
 	rtime = time(NULL);
 	itime = localtime(&rtime);
 
-	strftime(buf, (sizeof buf) - 1, fmt, itime);
-
-	return smprintf("%s", buf);
+	strftime(buf, 64, fmt, itime);
 }

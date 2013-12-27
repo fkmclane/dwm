@@ -19,4 +19,4 @@ int gettemp(const char *thermal);
 int getmem();
 int getvol(const char *card, const char *selement);
 int getbatt(const char *batt);
-char *mktimes(const char *fmt, const char *tz);
+void mktimes(char *buf, const char *fmt, const char *tz);

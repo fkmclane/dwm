@@ -3,13 +3,14 @@ static unsigned int interval    = 2000;
 
 /* CPU */
 static Core cpu[]               = {
-	/* name   id */
-	{ "CPU", "core" },
+	/* name    id */
+	{ "CPU",   "core" },
 };
 
 /* Temperature */
 static const Temp thermal[]     = {
-	{ "TEMP", "thermal_zone0" },
+	/* name    id */
+	{ "TEMP",  "thermal_zone0" },
 };
 
 /* Memory */
@@ -25,5 +26,6 @@ static const char batt[]        = "BAT0";
 /* Time */
 static const char fmt[]         = "%A %d %B %I:%M %p";
 static const TZ tz[]          = {
-	{ "TIME", "America/New_York" },
+	/* name    timezone */
+	{ "",      "America/New_York" },
 };

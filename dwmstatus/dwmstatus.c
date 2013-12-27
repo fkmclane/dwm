@@ -1,12 +1,12 @@
 #define _BSD_SOURCE
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <X11/Xlib.h>
 
-#include "util.h"
 #include "data.h"
+#include "util.h"
 
 #include "config.h"
 
@@ -19,64 +19,57 @@ main(void) {
 		return 1;
 	}
 
-	int cpu_v, temp_v, mem_u, vol_v, batt_v;
-	float mem_v;
-	char *cpu_s, *temp_s, *mem_s, *vol_s, *batt_s, *time_v, *time_s, *status;
+	char status[512];
 
 	for (;;usleep(interval * 1000)) {
-		status = smprintf("\x05");
+		initstatus(status);
 
-		for (int i = 0; i < LENGTH(cpu); i++) {
-			cpu_v = getcore(&cpu[i]);
-			cpu_s = smprintf("%s:\x06 %d%%", cpu[i].name, cpu_v);
-			addstatus(status, cpu_s);
-			free(cpu_s);
+		if (cpu[0].name != NULL) {
+			for (int i = 0; i < LENGTH(cpu); i++)
+				addstatus(status, "%s:\x06 %d%%", cpu[i].name, getcore(&cpu[i]));
 		}
 
-		for (int i = 0; i < LENGTH(thermal); i++) {
-			temp_v = gettemp(thermal[i].id);
-			temp_s = smprintf("%s:\x06 %d""\xB0""C", thermal[i].name, temp_v);
-			addstatus(status, temp_s);
-			free(temp_s);
+		if (thermal[0].name != NULL) {
+			for (int i = 0; i < LENGTH(thermal); i++)
+				addstatus(status, "%s:\x06 %d""\xB0""C", thermal[i].name, gettemp(thermal[i].id));
 		}
 
-		mem_v = getmem();
-		mem_u = 0;
+		float mem_v = getmem();
+		int mem_u = 0;
 		while (mem_v > 512 && mem_u < LENGTH(units)) {
 			mem_v /= 1024;
 			mem_u++;
 		}
-		mem_s = smprintf("MEM:\x06 %.1f %s", mem_v, units[mem_u]);
-		addstatus(status, mem_s);
-		free(mem_s);
+		addstatus(status, "MEM:\x06 %.1f %s", mem_v, units[mem_u]);
 
-		if (LENGTH(card) > 0 && LENGTH(selement) > 0) {
-			vol_v = getvol(card, selement);
-			vol_s = vol_v < 0 ? smprintf("VOL:\x06 ---") : smprintf("VOL:\x06 %d%%", vol_v);
-			addstatus(status, vol_s);
-			free(vol_s);
-		}
-
-		if (LENGTH(batt) > 0) {
-			batt_v = getbatt(batt);
-			if (batt_v > 5)
-				batt_s = smprintf("BATT:\x06 %d%%", batt_v);
+		if (strlen(card) > 0 && strlen(selement) > 0) {
+			int vol_v = getvol(card, selement);
+			if (vol_v < 0)
+				addstatus(status, "VOL:\x06 ---");
 			else
-				batt_s = smprintf("\x04""BATT: %d%%", batt_v);
-			addstatus(status, batt_s);
-			free(batt_s);
+				addstatus(status, "VOL:\x06 %d%%", vol_v);
 		}
 
-		for (int i = 0; i < LENGTH(tz); i++) {
-			time_v = mktimes(fmt, tz[i].id);
-			time_s = smprintf("%s:\x06 %s", tz[i].name, time_v);
-			free(time_v);
-			addstatus(status, time_s);
-			free(time_s);
+		if (strlen(batt) > 0) {
+			int batt_v = getbatt(batt);
+			if (batt_v > 5)
+				addstatus(status, "BATT:\x06 %d%%", batt_v);
+			else
+				addstatus(status, "\x04""BATT: %d%%", batt_v);
+		}
+
+		if (tz[0].name != NULL) {
+			char buf[64];
+			for (int i = 0; i < LENGTH(tz); i++) {
+				mktimes(buf, fmt, tz[i].id);
+				if(strlen(tz[i].name) > 0)
+					addstatus(status, "%s (%s)", buf, tz[i].name);
+				else
+					addstatus(status, "%s", buf);
+			}
 		}
 
 		setstatus(dpy, status);
-		free(status);
 	}
 
 	XCloseDisplay(dpy);

@@ -4,6 +4,6 @@
 
 #define LENGTH(X)   (sizeof X / sizeof X[0])
 
-char *smprintf(char *fmt, ...);
-void addstatus(char *status, const char *str);
+void initstatus(char *status);
+void addstatus(char *status, const char *fmt, ...);
 void setstatus(Display *dpy, char *str);

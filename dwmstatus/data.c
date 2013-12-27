@@ -93,16 +93,16 @@ int
 getbatt(const char *batt) {
 	FILE *file;
 	char path[64];
-	int full, now;
+	long full, now;
 
 	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_full", batt);
 	file = fopen(path, "r");
-	fscanf(file, "%d\n", &full);
+	fscanf(file, "%ld\n", &full);
 	fclose(file);
 
 	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_now", batt);
 	file = fopen(path, "r");
-	fscanf(file, "%d\n", &now);
+	fscanf(file, "%ld\n", &now);
 	fclose(file);
 
 	return now * 100 / full;

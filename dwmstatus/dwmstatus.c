@@ -14,7 +14,7 @@ Display *dpy;
 
 int
 main(void) {
-	if (dpy != XOpenDisplay(NULL)) {
+	if (!(dpy = XOpenDisplay(NULL))) {
 		fprintf(stderr, "dwmstatus: cannot open display.\n");
 		return 1;
 	}

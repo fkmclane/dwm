@@ -1,4 +1,3 @@
-#define _BSD_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -36,12 +35,13 @@ main(void) {
 
 		float mem_v = getmem();
 		int mem_u = 0;
-		while (mem_v > 512 && mem_u < LENGTH(units)) {
+		while (mem_v > 896 && mem_u < LENGTH(units)) {
 			mem_v /= 1024;
 			mem_u++;
 		}
 		addstatus(status, "MEM:\x06 %.1f %s", mem_v, units[mem_u]);
 
+#ifdef ALSA
 		if (strlen(card) > 0 && strlen(selement) > 0) {
 			int vol_v = getvol(card, selement);
 			if (vol_v < 0)
@@ -49,6 +49,7 @@ main(void) {
 			else
 				addstatus(status, "VOL:\x06 %d%%", vol_v);
 		}
+#endif
 
 		if (strlen(batt) > 0) {
 			int batt_v = getbatt(batt);

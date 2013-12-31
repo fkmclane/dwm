@@ -20,6 +20,11 @@ addstatus(char *status, const char *fmt, ...) {
 }
 
 void
+splitstatus(char *status) {
+	sprintf(status, "%s\n", status);
+}
+
+void
 setstatus(Display *dpy, char *status) {
 	XStoreName(dpy, DefaultRootWindow(dpy), status);
 	XSync(dpy, False);

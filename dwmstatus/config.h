@@ -4,7 +4,7 @@ static unsigned int interval    = 2000;
 /* CPU */
 static Core cpu[]               = {
 	/* name    id */
-	{ "CPU",   "core" },
+	{ "CPU",   "cpu" },
 };
 
 /* Temperature */

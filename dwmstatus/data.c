@@ -1,8 +1,9 @@
-#define _BSD_SOURCE
 #include <stdio.h>
 #include <time.h>
 
+#ifdef ALSA
 #include <alsa/asoundlib.h>
+#endif
 
 #include "data.h"
 
@@ -12,14 +13,16 @@ getcore(Core *cpu) {
 	FILE *file;
 	char name[10];
 	unsigned long long user, userlow, sys, idle, total;
-	int result;
+	int ret;
 
 	file = fopen("/proc/stat", "r");
 	do {
-		result = fscanf(file, "%s %llu %llu %llu %llu\n", name, &user, &userlow, &sys, &idle);
+		ret = fscanf(file, "%s %llu %llu %llu %llu %*[^\n]\n", name, &user, &userlow, &sys, &idle);
 	}
-	while(strcmp(name, cpu->name) != 0 && result != EOF);
+	while(strcmp(name, cpu->id) != 0 && ret != EOF);
 	fclose(file);
+	if(ret < 5)
+		return ret;
 
 	total = (user - cpu->user) + (userlow - cpu->userlow) + (sys - cpu->sys);
 	percent = total * 100 / (total + idle - cpu->idle);
@@ -37,11 +40,14 @@ gettemp(const char *thermal) {
 	FILE *file;
 	char path[64];
 	int temp;
+	int ret;
 
 	snprintf(path, sizeof(path), "/sys/class/thermal/%s/temp", thermal);
 	file = fopen(path, "r");
-	fscanf(file, "%d\n", &temp);
+	ret = fscanf(file, "%d\n", &temp);
 	fclose(file);
+	if(ret < 1)
+		return -1;
 
 	return temp / 1000;
 }
@@ -50,14 +56,18 @@ int
 getmem() {
 	FILE *file;
 	int total, free, buffers, cache;
+	int ret;
 
 	file = fopen("/proc/meminfo", "r");
-	fscanf(file, "MemTotal: %d kB\nMemFree: %d kB\nBuffers: %d kB\nCached: %d kB\n", &total, &free, &buffers, &cache);
+	ret = fscanf(file, "MemTotal: %d kB\nMemFree: %d kB\nBuffers: %d kB\nCached: %d kB\n", &total, &free, &buffers, &cache);
 	fclose(file);
+	if(ret < 4)
+		return -1;
 
 	return total - free - buffers - cache;
 }
 
+#ifdef ALSA
 int
 getvol(const char *card, const char *selement) {
 	snd_mixer_t *mixer;
@@ -88,22 +98,28 @@ getvol(const char *card, const char *selement) {
 
 	return vol * 100 / max;
 }
+#endif
 
 int
 getbatt(const char *batt) {
 	FILE *file;
 	char path[64];
 	long full, now;
+	int ret;
 
 	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_full", batt);
 	file = fopen(path, "r");
-	fscanf(file, "%ld\n", &full);
+	ret = fscanf(file, "%ld\n", &full);
 	fclose(file);
+	if(ret < 1)
+		return -1;
 
 	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_now", batt);
 	file = fopen(path, "r");
-	fscanf(file, "%ld\n", &now);
+	ret = fscanf(file, "%ld\n", &now);
 	fclose(file);
+	if(ret < 1)
+		return -1;
 
 	return now * 100 / full;
 }

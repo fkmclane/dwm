@@ -6,6 +6,7 @@ Patches:
 - Color codes for status
 - Urgency color
 - Optional extra status bar
+- Status bar on all monitors
 
 Features in dwmstatus:
 - CPU usage (Multiple CPU support)

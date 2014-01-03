@@ -16,6 +16,8 @@ getcore(Core *cpu) {
 	int ret;
 
 	file = fopen("/proc/stat", "r");
+	if(file == NULL)
+		return -1;
 	do {
 		ret = fscanf(file, "%s %llu %llu %llu %llu %*[^\n]\n", name, &user, &userlow, &sys, &idle);
 	}
@@ -44,6 +46,8 @@ gettemp(const char *thermal) {
 
 	snprintf(path, sizeof(path), "/sys/class/thermal/%s/temp", thermal);
 	file = fopen(path, "r");
+	if(file == NULL)
+		return -1;
 	ret = fscanf(file, "%d\n", &temp);
 	fclose(file);
 	if(ret < 1)
@@ -59,6 +63,8 @@ getmem() {
 	int ret;
 
 	file = fopen("/proc/meminfo", "r");
+	if(file == NULL)
+		return -1;
 	ret = fscanf(file, "MemTotal: %d kB\nMemFree: %d kB\nBuffers: %d kB\nCached: %d kB\n", &total, &free, &buffers, &cache);
 	fclose(file);
 	if(ret < 4)
@@ -109,6 +115,8 @@ getbatt(const char *batt) {
 
 	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_full", batt);
 	file = fopen(path, "r");
+	if(file == NULL)
+		return - 1;
 	ret = fscanf(file, "%ld\n", &full);
 	fclose(file);
 	if(ret < 1)
@@ -116,6 +124,8 @@ getbatt(const char *batt) {
 
 	snprintf(path, sizeof(path), "/sys/class/power_supply/%s/energy_now", batt);
 	file = fopen(path, "r");
+	if(file == NULL)
+		return -1;
 	ret = fscanf(file, "%ld\n", &now);
 	fclose(file);
 	if(ret < 1)

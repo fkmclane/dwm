@@ -104,8 +104,8 @@ getvol(const char *card, const char *selement) {
 
 	return vol * 100 / max;
 }
-#endif
 
+#endif
 int
 getbatt(const char *batt) {
 	FILE *file;
